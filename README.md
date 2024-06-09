@@ -31,20 +31,5 @@ require("neotest").setup {
 }
 ```
 
-### Setup with watch feature
-```lua
-require("neotest").setup {
- adapters = {
-   require('neotest-jdtls')
- },
- watch = {
-    enabled = true,
-    symbol_queries = {
-      java = require('neotest-jdtls.utils').symbol_query 
-   }
- }
-}
-```
-
 ### Acknowledgements
 - **[neotest-java](https://github.com/rcasia/neotest-java)**

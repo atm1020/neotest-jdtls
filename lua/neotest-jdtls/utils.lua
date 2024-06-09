@@ -4,6 +4,7 @@ local M = {}
 
 M.symbol_query = [[
         ;query
+	;Capture variable declaration
 	(type_identifier) @symbol
 ]]
 

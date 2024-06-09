@@ -17,12 +17,40 @@ local TestLevel = {
 	Method = 6,
 }
 
+---Returns a stream reader function
+---@param conn uv_tcp_t
+---@return fun(err: string, buffer: string) # callback function
+-- local function get_stream_reader(conn)
+-- 	-- self.conn = conn
+-- 	-- self.result_parser = self.result_parser_fac:get_parser()
+--
+-- 	return vim.schedule_wrap(function(err, buffer)
+-- 		if err then
+-- 			-- self:on_error(err)
+-- 			-- self:on_close()
+-- 			-- self.conn:close()
+-- 			return
+-- 		end
+--
+-- 		if buffer then
+-- 			log.debug('buffer >> ', buffer)
+-- 			-- self:on_update(buffer)
+-- 		else
+-- 			log.debug('buffer is nil close')
+-- 			-- self:on_close(conn)
+-- 			conn:close()
+-- 			-- self.conn:close()
+-- 		end
+-- 	end)
+-- end
+
 local function setup(server, dap_launcher_config, report)
 	server:bind('127.0.0.1', 0)
 	server:listen(128, function(err)
 		assert(not err, err)
 		local sock = assert(vim.loop.new_tcp(), 'uv.new_tcp must return handle')
 		server:accept(sock)
+		-- report:get_stream_reader(sock))
 		local success = sock:read_start(report:get_stream_reader(sock))
 		assert(success == 0, 'failed to listen to reader')
 	end)
@@ -33,9 +61,34 @@ local function setup(server, dap_launcher_config, report)
 	return dap_launcher_config
 end
 
---- @param java_test_item JavaTestItem
+---@return JavaTestItem
+---@param test_file_uri string
+local function get_java_test_item(test_file_uri)
+	---@type JavaTestItem
+	local java_test_items = execute_command({
+		command = 'vscode.java.test.findTestTypesAndMethods',
+		arguments = { test_file_uri },
+	}).result
+	log.debug('java_test_items', vim.inspect(java_test_items))
+	if java_test_items == nil then
+		return {}
+	end
+	assert(
+		#java_test_items == 1,
+		'Too many test items found: '
+			.. #java_test_items
+			.. ' for '
+			.. test_file_uri
+	)
+	return java_test_items
+end
+
+--- @param test_file_uri string
 --- @return JunitLaunchRequestArguments
-local function handle_test(data, java_test_item)
+local function handle_test(data, test_file_uri)
+	local java_test_items = get_java_test_item(test_file_uri)
+	assert(#java_test_items ~= 0, 'No test items found')
+	local java_test_item = java_test_items[1]
 	---@type JavaTestItem
 	local closest_item = nil
 	local start_line = data.range[1] + 1
@@ -46,6 +99,7 @@ local function handle_test(data, java_test_item)
 		end
 		closest_item = children
 	end
+
 	return {
 		projectName = closest_item.projectName,
 		testLevel = TestLevel.Method,
@@ -54,22 +108,62 @@ local function handle_test(data, java_test_item)
 	}
 end
 
---- @param java_test_item JavaTestItem
+--- @param test_file_uri string
 --- @return JunitLaunchRequestArguments
-local function handle_file(java_test_item)
-	local m = nil
-	local testNames = {}
-	for _, children in ipairs(java_test_item.children) do
-		table.insert(testNames, children.jdtHandler)
-		if m == nil then
-			m = children
+local function handle_dir(tree, test_file_uri)
+	local file_nodes = {}
+	for _, node in tree:iter_nodes() do
+		local node_data = node:data()
+		if
+			node_data.type == 'file'
+			and vim.startswith(vim.uri_from_fname(node_data.path), test_file_uri)
+		then
+			log.debug('node_data', vim.inspect(node_data))
+			file_nodes[node_data.id] = vim.uri_from_fname(node_data.path)
+		end
+	end
+	local items = {}
+	local project_name = nil
+	local test_kind = nil
+	for _, url in pairs(file_nodes) do
+		local java_test_items = get_java_test_item(url)
+		if #java_test_items == 1 then
+			local java_test_item = java_test_items[1]
+			table.insert(items, java_test_item.fullName)
+			if project_name == nil then
+				project_name = java_test_item.projectName
+			end
+			if test_kind == nil then
+				test_kind = java_test_item.testKind
+			end
+		else
+			log.info(
+				'Unexpected number of test items found: ',
+				#java_test_items,
+				' for ',
+				url
+			)
 		end
 	end
 	return {
-		projectName = m.projectName,
+		projectName = project_name,
 		testLevel = TestLevel.Class,
-		testKind = m.testKind,
-		testNames = { vim.split(m.fullName, '#')[1] },
+		testKind = test_kind,
+		testNames = items,
+	}
+end
+
+--- @param test_file_uri string
+--- @return JunitLaunchRequestArguments
+local function handle_file(test_file_uri)
+	local java_test_items = get_java_test_item(test_file_uri)
+	assert(#java_test_items == 1, 'No test items found')
+	local java_test_item = java_test_items[1]
+	return {
+		projectName = java_test_item.projectName,
+		testLevel = TestLevel.Class,
+		testKind = java_test_item.testKind,
+		testNames = { vim.split(java_test_item.fullName, '#')[1] },
 	}
 end
 
@@ -94,47 +188,20 @@ local function run_test(dap_launcher_config, server)
 	event.wait()
 end
 
---- @return ResolvedMainClass
-local function resolve_main_class()
-	local class_list = execute_command({
-		command = 'vscode.java.resolveMainClass',
-		arguments = nil,
-	}).result
-	assert(#class_list > 0, 'No main class found')
-	return class_list[1]
-end
-
----@return JavaTestItem
----@param test_file_uri string
-local function get_java_test_item(test_file_uri)
-	---@type JavaTestItem
-	local java_test_items = execute_command({
-		command = 'vscode.java.test.findTestTypesAndMethods',
-		arguments = { test_file_uri },
-	}).result
-	assert(#java_test_items == 1, 'Too many test items found')
-	return java_test_items[1]
-end
-
 ---@param test_file_uri string
 ---@return JunitLaunchRequestArguments
-local function resolve_junit_launch_arguments(data, test_file_uri)
-	if
-		data.type ~= 'test'
-		and data.type ~= 'file'
-		and data.type ~= 'namespace'
-	then
-		error('Unsupported test type: ' .. data.type)
-	end
-
-	local java_test_item = get_java_test_item(test_file_uri)
+local function resolve_junit_launch_arguments(tree, test_file_uri)
+	local data = tree:data()
 	---@type JunitLaunchRequestArguments
 	local arguments
 	if data.type == 'test' then
-		arguments = handle_test(data, java_test_item)
+		arguments = handle_test(data, test_file_uri)
+	elseif data.type == 'dir' then
+		arguments = handle_dir(tree, test_file_uri)
+	elseif data.type == 'file' or data.type == 'namespace' then
+		arguments = handle_file(test_file_uri)
 	else
-		-- file and namespace
-		arguments = handle_file(java_test_item)
+		error('Unsupported type: ' .. data.type)
 	end
 	local launch_arguments = execute_command({
 		command = 'vscode.java.test.junit.argument',
@@ -150,22 +217,20 @@ function M.build_spec(args)
 	local strategy = args.strategy
 	local tree = args and args.tree
 	local data = tree:data()
-	log.debug('data', vim.inspect(data))
-
-	local resolved_main_class = resolve_main_class()
 	local test_file_uri = vim.uri_from_fname(data.path)
+
 	log.debug('file_uri', test_file_uri)
+
+	local junit_launch_arguments =
+		resolve_junit_launch_arguments(tree, test_file_uri)
 
 	local executable = execute_command({
 		command = 'vscode.java.resolveJavaExecutable',
 		arguments = {
-			resolved_main_class.mainClass,
-			resolved_main_class.projectName,
+			junit_launch_arguments.mainClass,
+			junit_launch_arguments.projectName,
 		},
 	}).result
-
-	local junit_launch_arguments =
-		resolve_junit_launch_arguments(data, test_file_uri)
 
 	local is_debug = strategy == 'dap'
 	local dap_launcher_config =
@@ -173,7 +238,7 @@ function M.build_spec(args)
 			debug = is_debug,
 			label = 'Launch All Java Tests',
 		})
-
+	log.debug('dap_launcher_config', vim.inspect(dap_launcher_config))
 	local report = JUnitReport(ResultParserFactory(), ReportViewer())
 	local server = assert(vim.loop.new_tcp(), 'uv.new_tcp() must return handle')
 	dap_launcher_config = setup(server, dap_launcher_config, report)
@@ -208,6 +273,7 @@ return M
 
 --- @class JunitLaunchRequestArguments
 --- @field projectName string
+--- @field mainClass string
 --- @field testLevel number
 --- @field testKind string
 --- @field testNames string[]

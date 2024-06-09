@@ -1,5 +1,3 @@
-local utils = require('neotest-jdtls.utils')
-
 local adapter = {}
 ---@class neotest.Adapter
 ---@field name string
@@ -10,9 +8,8 @@ adapter.Adapter = { name = 'neotest-jdtls' }
 ---@async
 ---@param dir string @Directory to treat as cwd
 ---@return string | nil @Absolute root dir of test suite
-function adapter.Adapter.root(_)
-	local root_dir = utils.jdtls().config.root_dir
-	return root_dir
+function adapter.Adapter.root(dir)
+	return require('neotest-jdtls.impl.root').root(dir)
 end
 
 ---Filter directories when searching for test files
@@ -22,9 +19,11 @@ end
 ---@param root string Root directory of project
 ---@return boolean
 function adapter.Adapter.filter_dir(name, rel_path, root)
-	local res =
-		require('neotest-jdtls.impl.filter_dir').filter_dir(name, rel_path, root)
-	return res
+	return require('neotest-jdtls.impl.filter_dir').filter_dir(
+		name,
+		rel_path,
+		root
+	)
 end
 
 ---@async

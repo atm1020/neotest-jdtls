@@ -6,6 +6,7 @@ describe('filter_dir', function()
 		local dirs = {
 			{ 'test', 'test', root },
 			{ 'src', 'src/test/java/com/example', root },
+			{ 'src', 'module2/src', root },
 		}
 
 		for _, dir in ipairs(dirs) do
