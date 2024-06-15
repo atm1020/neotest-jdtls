@@ -2,12 +2,6 @@ local log = require('neotest-jdtls.log')
 
 local M = {}
 
-M.symbol_query = [[
-        ;query
-	;Capture variable declaration
-	(type_identifier) @symbol
-]]
-
 function M.jdtls()
 	local clients = vim.lsp.get_active_clients({ name = 'jdtls' })
 

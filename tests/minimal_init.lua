@@ -27,7 +27,6 @@ function M.setup()
 	vim.opt.runtimepath:append(M.root())
 	vim.opt.packpath = { M.root('.tests/site') }
 	M.load('nvim-lua/plenary.nvim')
-	M.load('nvim-java/nvim-java-test')
 	M.load('nvim-neotest/nvim-nio')
 end
 

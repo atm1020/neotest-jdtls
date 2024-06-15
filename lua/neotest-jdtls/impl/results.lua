@@ -1,45 +1,96 @@
 local async = require('neotest.async')
 local log = require('neotest-jdtls.log')
 local lib = require('neotest.lib')
+local JunitTestResultState =
+	require('neotest-jdtls.junit_result_parser').junit_test_result_state
 
 local M = {}
 
-local TestStatus = {
+local NeotestTestStatus = {
 	Failed = 'failed',
 	Skipped = 'skipped',
 	Passed = 'passed',
 }
 
-local function get_result_from_ch_node(ch)
-	if ch.result.status == TestStatus.Failed then
-		local results_path = async.fn.tempname()
-		lib.files.write(results_path, table.concat(ch.result.trace, '\n'))
-		log.debug('stream_path: ', results_path)
+local function get_short_msg(error)
+	log.debug('error: ', vim.inspect(error))
+	if error.expected and error.actual then
+		return 'Expected '
+			.. '['
+			.. error.expected
+			.. '] but was ['
+			.. error.actual
+			.. ']'
+	end
+	return vim.split(error.stack_trace, '\n')[1]
+end
+
+---@param item TestItem
+local function get_result(item)
+	if not item.current_state then
+		return {}
+	end
+	local result_state = item.current_state
+	local results_path = async.fn.tempname()
+	if result_state == JunitTestResultState.Failed then
+		lib.files.write(results_path, item.error.stack_trace)
+		local short_msg = get_short_msg(item.error)
 		return {
-			status = TestStatus.Failed,
+			status = NeotestTestStatus.Failed,
 			errors = {
-				{ message = ch.result.trace[1] },
+				{ message = short_msg },
 			},
 			output = results_path,
-			short = ch.result.trace[1],
+			short = short_msg,
 		}
-	elseif ch.result.status == TestStatus.Skipped then
+	elseif result_state == JunitTestResultState.Skipped then
 		return {
-			status = TestStatus.Skipped,
+			status = NeotestTestStatus.Skipped,
 		}
 	else
-		local results_path = async.fn.tempname()
-		local log_data
-		if ch.result.trace then
-			log_data = table.concat(ch.result.trace, '\n')
-		else
-			log_data = 'Test passed (There is no output available)'
-		end
+		local log_data = 'Test passed (There is no output available)'
 		lib.files.write(results_path, log_data)
 		return {
-			status = TestStatus.Passed,
-			output = results_path,
+			status = NeotestTestStatus.Passed,
 		}
+	end
+end
+
+---@param dynamic_tests table<string, TestItem[]>
+local function get_result_for_dynamic(dynamic_tests, results)
+	log.debug('dynamic_tests: ', vim.inspect(dynamic_tests))
+	for _, tests in pairs(dynamic_tests) do
+		local result = {
+			status = NeotestTestStatus.Passed,
+		}
+		local key = nil
+		local results_path = async.fn.tempname()
+		local errMsg = ''
+		for _, test in pairs(tests) do
+			if not key then
+				key = test.method
+			end
+			if test.current_state == JunitTestResultState.Failed then
+				result.errors = {
+					{ message = get_short_msg(test.error) },
+				}
+				errMsg = errMsg
+					.. '\n------------------------------------ \n'
+					.. 'inv='
+					.. test.dynamic_test_details
+					.. '\n------------------------------------ \n'
+					.. ' \n'
+					.. test.error.stack_trace
+				result.status = NeotestTestStatus.Failed
+			elseif test.current_state == JunitTestResultState.Skipped then
+				result.status = NeotestTestStatus.Skipped
+			end
+		end
+		if errMsg ~= '' then
+			lib.files.write(results_path, errMsg)
+			result.output = results_path
+		end
+		results[key] = result
 	end
 end
 
@@ -48,14 +99,33 @@ end
 ---@param tree neotest.Tree
 function M.results(spec, _, tree)
 	local result_map = {}
-	local report = spec.context.report:get_results()
-	for _, item in ipairs(report) do
-		log.debug('item: ', item)
-		for _, ch in ipairs(item.children) do
-			local key = vim.split(ch.display_name, '%(')[1]
-			result_map[key] = get_result_from_ch_node(ch)
+
+	--- @type JunitResultParser
+	local parser = spec.context.parser
+	parser:parse()
+
+	--- @type table<string, TestItem[]>
+	local dynamic_tests = {}
+	log.debug('plain test output: ', vim.inspect(parser:get_plain_results()))
+
+	for _, testItem in pairs(parser.test_items) do
+		log.debug('testItem: ', vim.inspect(testItem))
+		if testItem.current_state then -- TODO filter in the analyzer
+			if testItem.dynamic_test_details then
+				if not dynamic_tests[testItem.full_name] then
+					dynamic_tests[testItem.full_name] = {}
+				end
+				table.insert(dynamic_tests[testItem.full_name], testItem)
+			else
+				local key = testItem.method
+				if key then
+					result_map[key] = get_result(testItem)
+				end
+			end
 		end
 	end
+	get_result_for_dynamic(dynamic_tests, result_map)
+
 	local results = {}
 	for _, node in tree:iter_nodes() do
 		local node_data = node:data()
