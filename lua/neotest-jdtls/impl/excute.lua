@@ -91,9 +91,9 @@ local function handle_test(data, test_file_uri)
 	local java_test_item = java_test_items[1]
 	---@type JavaTestItem
 	local closest_item = nil
-	local start_line = data.range[1] + 1
+	local end_line = data.range[3]
 	for _, children in ipairs(java_test_item.children) do
-		if children.range.start.line == start_line then
+		if children.range['end'].line == end_line then
 			closest_item = children
 			break
 		end

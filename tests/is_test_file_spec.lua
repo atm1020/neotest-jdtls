@@ -3,8 +3,7 @@ local neotest = require('neotest-jdtls')
 describe('is_test_file', function()
 	it('return=true', function()
 		local files = {
-			'src/test/java/mock/Mocktest.java',
-			'src/test/java/mock/MockRepository.java',
+			'src/test/java/mock/MockTest.java',
 			'src/test/java/mock/MockRepositoryTest.java',
 		}
 
@@ -15,7 +14,7 @@ describe('is_test_file', function()
 
 	it('return=false', function()
 		local files = {
-			'src/main/java/mock/MockTest.java',
+			'src/main/java/mock/Mocktest.java',
 			'src/main/java/mock/MockRepository.java',
 			'resources/application.properties',
 			'pom.xml',
