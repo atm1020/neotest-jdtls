@@ -1,4 +1,5 @@
 local log = require('neotest-jdtls.utils.log')
+local nio = require('nio')
 
 local JDTLS = {}
 
@@ -21,7 +22,7 @@ JDTLS.TestLevel = {
 }
 
 function JDTLS.get_client()
-	local clients = vim.lsp.get_clients({ name = 'jdtls' })
+	local clients = nio.lsp.get_clients({ name = 'jdtls' })
 
 	if #clients > 1 then
 		error('Could not find any running jdtls clients')
@@ -31,83 +32,99 @@ function JDTLS.get_client()
 end
 
 function JDTLS.root_dir()
-	return JDTLS.get_client().config.root_dir
+	-- TODO check why the nio.ls.get_clients is dosent has config property
+	local client = vim.lsp.get_clients({ name = 'jdtls' })[1]
+	return client.config.root_dir
 end
 
----Executes workspace command on jdtls
+---TODO use this function to execute commands
 ---@param cmd_info {command: string, arguments: any }
----@param timeout number?
----@param buffer number?
 ---@return { err: { code: number, message: string }, result: any }
-local function execute_command(cmd_info, timeout, buffer)
-	timeout = timeout and timeout or 5000
-	buffer = buffer and buffer or 0
+local function execute_command(cmd_info)
 	log.trace(
 		'Executing command:',
 		'[' .. cmd_info.command .. ']',
 		'with args:',
 		vim.inspect(cmd_info.arguments)
 	)
-	local result = JDTLS.get_client()
-		.request_sync('workspace/executeCommand', cmd_info, timeout, buffer)
-	log.trace(
-		'Command',
-		'[' .. cmd_info.command .. ']',
-		'executed with result:',
-		vim.inspect(result)
-	)
-	return result
+	local err, result = JDTLS.get_client().request
+		.workspace_executeCommand(cmd_info)
+	if err then
+		log.debug(
+			'Command',
+			'[' .. cmd_info.command .. ']',
+			'failed with error:',
+			vim.inspect(err)
+		)
+	else
+		log.debug(
+			'Command',
+			'[' .. cmd_info.command .. ']',
+			'executed with result:',
+			vim.inspect(result)
+		)
+	end
+	return {
+		err = err,
+		result = result,
+	}
 end
 
 --- @param test_file_uri string
 --- @return JavaTestItem[]
 function JDTLS.find_test_types_and_methods(test_file_uri)
-	local java_test_items = execute_command({
+	local response = execute_command({
 		command = 'vscode.java.test.findTestTypesAndMethods',
 		arguments = { test_file_uri },
 	})
-	return java_test_items.result
+	return response.result
 end
 
 --- @return JavaTestItem[]
-function JDTLS.find_java_projects()
-	local project = execute_command({
+function JDTLS.find_java_projects(root)
+	return execute_command({
 		command = 'vscode.java.test.findJavaProjects',
-		arguments = { vim.uri_from_fname(JDTLS.get_client().root_dir) },
+		arguments = { vim.uri_from_fname(root) },
+	}).result
+end
+
+--- @param file_path string
+--- @return { err: { code: number, message: string }, result: boolean }
+function JDTLS.is_test_file(file_path)
+	return execute_command({
+		command = 'java.project.isTestFile',
+		arguments = { vim.uri_from_fname(file_path) },
 	})
-	return project.result
 end
 
 --- @param jdtHandler string
 --- @return JavaTestItem[]
 function JDTLS.find_test_packages_and_types(jdtHandler)
-	local data = execute_command({
+	return execute_command({
 		command = 'vscode.java.test.findTestPackagesAndTypes',
 		arguments = { jdtHandler },
-	})
-	return data.result
+	}).result
 end
 
 --- @param arguments JunitLaunchRequestArguments
 function JDTLS.get_junit_launch_arguments(arguments)
-	local launch_arguments = execute_command({
+	return execute_command({
 		command = 'vscode.java.test.junit.argument',
 		arguments = vim.fn.json_encode(arguments),
 	}).result.body
-	return launch_arguments
 end
 
 --- @param main_class string
 --- @param project_name string
 function JDTLS.resolve_java_executable(main_class, project_name)
-	local executable = execute_command({
+	local response = execute_command({
 		command = 'vscode.java.resolveJavaExecutable',
 		arguments = {
 			main_class,
 			project_name,
 		},
 	}).result
-	return executable
+	return response
 end
 
 return JDTLS

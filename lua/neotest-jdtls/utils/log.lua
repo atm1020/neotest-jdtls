@@ -22,7 +22,7 @@ local default_config = {
 
 	-- Any messages above this level will be logged.
 	-- TODO user config
-	level = 'trace',
+	level = vim.g.neotest_jdtls_log_level or 'info',
 
 	-- Level configuration
 	modes = {

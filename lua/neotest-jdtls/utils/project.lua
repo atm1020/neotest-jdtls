@@ -1,5 +1,6 @@
 local log = require('neotest-jdtls.utils.log')
-local jdtls = require('neotest-jdtls.utils.jdtls_nio')
+local jdtls = require('neotest-jdtls.utils.jdtls')
+local TestLevel = require('neotest-jdtls.utils.jdtls').TestLevel
 local class = require('neotest-jdtls.utils.class')
 
 local M = {
@@ -7,79 +8,86 @@ local M = {
 }
 
 --- @class ProjectCache
---- @field longestTestFolder string
---- @field packages table<string, JavaTestItem[]> -- <uri,JavatestItem[]>
---- @field classes table<string, JavaTestItem[]> -- <uri,JavatestItem[]>
---- @field methods table<string, JavaTestItem[]> -- <uri,JavatestItem[]>
+--- @field test_folders table<string, boolean> -- <uri, boolean>
+--- @field methods table<string, boolean> -- <uri, boolean>
 --- @field root_dir string
 local ProjectCache = class()
 
 function ProjectCache:_init()
-	self.longestTestFolder = ''
-	self.packages = {}
-	self.classes = {}
 	self.methods = {}
+	self.test_folders = {}
 end
 
---- @param root string
-local function load_current_project(root)
-	log.debug('Load project cache')
-	local cache = ProjectCache()
+--[[ Example:
 
+root : /home/username/project
+path : /home/username/project/src/main/java/com/example/Hello.java
+test_folders : {}
+
+To fill test_folders:
+current : {
+	src=true,
+	main=true,
+	java=true,
+	com=true,
+	example=true,
+	src/main=true,
+	src/main/java=true,
+	src/main/java/com=true,
+	src/main/java/com/example=true}
+
+--]]
+--- @param root string
+--- @param path string
+--- @param test_folders table<string, boolean>
+local function split_and_fill(root, path, test_folders)
+	local p = vim.uri_to_fname(path):sub(#root + 2)
+	local parts = {}
+	for dir in p:gmatch('([^/]+)/?') do
+		table.insert(parts, dir)
+		test_folders[table.concat(parts, '/')] = true
+		test_folders[dir] = true
+	end
+end
+
+local function load_current_project()
+	log.debug('Project cache loading')
+	local cache = ProjectCache()
+	local root = jdtls.root_dir()
 	local project = jdtls.find_java_projects(root)
-	log.debug('project', vim.inspect(project), #project)
 	assert(#project == 1)
 	local jdtHandler = project[1].jdtHandler
 
 	local data = jdtls.find_test_packages_and_types(jdtHandler)
 	for _, package in ipairs(data) do
-		if package.testLevel == 4 or package.testLevel == 3 then
-			cache.packages[package.uri] = {
-				package = package,
-			}
-			if #package.uri > #cache.longestTestFolder then
-				cache.longestTestFolder = package.uri
-			end
-
+		if
+			package.testLevel == TestLevel.Package
+			or package.testLevel == TestLevel.Project
+		then
+			split_and_fill(root, package.uri, cache.test_folders)
 			for _, child in ipairs(package.children) do
-				cache.classes[child.uri] = {
-					classes = child,
-				}
+				split_and_fill(root, package.uri, cache.test_folders)
+				if child.testLevel == TestLevel.Class then
+					cache.methods[child.uri] = true
+				end
 			end
 		end
 	end
 	M.project_cache = cache
+	log.debug('Project cache loaded')
 end
 
 --- @return ProjectCache
---- @param root string
-function M.get_current_project(root)
+function M.get_current_project()
 	if not M.project_cache then
-		load_current_project(root)
-		return M.project_cache
-	else
-		return M.project_cache
+		load_current_project()
 	end
-end
-
-function M.autocmd_clear_cache()
-	if not M.project_cache then
-		return
-	end
-	local buf = vim.api.nvim_get_current_buf()
-	local bufname = vim.api.nvim_buf_get_name(buf)
-	local path = vim.uri_from_fname(bufname)
-	log.debug('cache infot', bufname, buf, path)
-	if not M.project_cache.classes[path] then
-		M.project_cache = nil
-		log.debug('cache cleared')
-	else
-		log.debug('skip cache clear')
-	end
+	return M.project_cache
 end
 
 function M.clear_project_cache()
 	M.project_cache = nil
+	log.debug('Project cache cleared')
 end
 
 return M

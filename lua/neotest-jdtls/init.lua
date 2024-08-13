@@ -3,9 +3,11 @@ local project = require('neotest-jdtls.utils.project')
 
 local group = vim.api.nvim_create_augroup('neotest-jdtls', { clear = true })
 
-vim.api.nvim_create_autocmd({ 'BufWritePost' }, {
+vim.api.nvim_create_autocmd({ 'BufWritePre' }, {
 	pattern = '*.java',
-	callback = project.autocmd_clear_cache,
+	callback = function()
+		project.clear_project_cache()
+	end,
 	group = group,
 })
 

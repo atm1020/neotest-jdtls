@@ -4,7 +4,7 @@ TEST_CONFIG=${TESTS_DIR}/minimal_init.lua
 
 .PHONY: test lint format all
 
-all: lint format
+checks: format lint
 
 test:
 	nvim --headless -c "PlenaryBustedDirectory  {minimal_init = '${TEST_CONFIG}'}"
@@ -13,3 +13,4 @@ lint:
 
 format:
 	~/.cargo/bin//stylua ${SRC_DIR} --config-path=.stylua.toml
+

@@ -1,5 +1,4 @@
 local nio = require('nio')
-
 local adapter = {}
 
 ---@class neotest.Adapter

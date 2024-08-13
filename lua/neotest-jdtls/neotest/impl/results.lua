@@ -1,6 +1,9 @@
 local async = require('neotest.async')
 local log = require('neotest-jdtls.utils.log')
 local lib = require('neotest.lib')
+local project = require('neotest-jdtls.utils.project')
+local jdtls = require('neotest-jdtls.utils.jdtls')
+local nio = require('nio')
 
 local M = {}
 
@@ -78,8 +81,18 @@ end
 
 local function merge_neotest_results(test_result_lookup, node_data)
 	if test_result_lookup[node_data.name] == nil then
-		log.debug('No test results found for', node_data.name)
-		return nil -- Maybe "status = Skipped" would be better with some message
+		local root = jdtls.root_dir()
+		nio.scheduler()
+		local current = project.get_current_project()
+		local path = node_data.path:sub(#root + 2)
+		--- If the node type is 'dir', and not in the project test folders (it's means there are no tests in it)
+		--- then mark it as skipped.
+		if not current.test_folders[path] and node_data.type == 'dir' then
+			return {
+				status = TestStatus.Skipped,
+			}
+		end
+		return nil
 	end
 
 	if #test_result_lookup[node_data.name] == 1 then
@@ -105,6 +118,19 @@ end
 ---@param result neotest.StrategyResult
 ---@param tree neotest.Tree
 function M.results(spec, _, tree)
+	log.debug('Parsing test results', vim.inspect(spec.context.report))
+	--- Set the results to skipped if the report is not available
+	if not spec.context.report then
+		local results = {}
+		for _, node in tree:iter_nodes() do
+			local node_data = node:data()
+			results[node_data.id] = {
+				status = TestStatus.Skipped,
+			}
+		end
+		return results
+	end
+
 	local test_result_lookup = {}
 	local report = spec.context.report:get_results()
 	for _, item in ipairs(report) do
@@ -112,6 +138,7 @@ function M.results(spec, _, tree)
 			group_and_map_test_results(test_result_lookup, item)
 		end
 	end
+
 	local results = {}
 	for _, node in tree:iter_nodes() do
 		local node_data = node:data()

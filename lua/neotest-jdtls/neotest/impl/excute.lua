@@ -49,11 +49,6 @@ end
 local function get_java_test_item(test_file_uri)
 	---@type JavaTestItem
 	local java_test_items = jdtls.find_test_types_and_methods(test_file_uri)
-	log.debug('java_test_items', vim.inspect(java_test_items))
-	if #java_test_items ~= 1 then
-		log.info('Unexpected number of test items found: ', #java_test_items)
-		return {}
-	end
 	return java_test_items
 end
 
@@ -83,7 +78,7 @@ local function handle_test(data, test_file_uri)
 end
 
 --- @param test_file_uri string
---- @return JunitLaunchRequestArguments
+--- @return JunitLaunchRequestArguments|nil
 local function handle_dir(tree, test_file_uri)
 	local file_nodes = {}
 	for _, node in tree:iter_nodes() do
@@ -92,7 +87,6 @@ local function handle_dir(tree, test_file_uri)
 			node_data.type == 'file'
 			and vim.startswith(vim.uri_from_fname(node_data.path), test_file_uri)
 		then
-			log.debug('node_data', vim.inspect(node_data))
 			file_nodes[node_data.id] = vim.uri_from_fname(node_data.path)
 		end
 	end
@@ -101,7 +95,7 @@ local function handle_dir(tree, test_file_uri)
 	local test_kind = nil
 	for _, url in pairs(file_nodes) do
 		local java_test_items = get_java_test_item(url)
-		if #java_test_items == 1 then
+		if java_test_items and #java_test_items == 1 then
 			local java_test_item = java_test_items[1]
 			table.insert(items, java_test_item.fullName)
 			if project_name == nil then
@@ -111,14 +105,15 @@ local function handle_dir(tree, test_file_uri)
 				test_kind = java_test_item.testKind
 			end
 		else
-			log.info(
-				'Unexpected number of test items found: ',
-				#java_test_items,
-				' for ',
-				url
-			)
+			log.warn('Unexpected number of test items found for ', url)
 		end
 	end
+
+	if #items == 0 then
+		log.warn('No project name found')
+		return nil
+	end
+
 	return {
 		projectName = project_name,
 		testLevel = TestLevel.Class,
@@ -128,10 +123,13 @@ local function handle_dir(tree, test_file_uri)
 end
 
 --- @param test_file_uri string
---- @return JunitLaunchRequestArguments
+--- @return JunitLaunchRequestArguments|nil
 local function handle_file(test_file_uri)
 	local java_test_items = get_java_test_item(test_file_uri)
-	assert(#java_test_items == 1, 'No test items found')
+	if not java_test_items or #java_test_items == 0 then
+		log.info('No test items found')
+		return nil
+	end
 	local java_test_item = java_test_items[1]
 	return {
 		projectName = java_test_item.projectName,
@@ -151,7 +149,7 @@ end
 
 local function run_test(dap_launcher_config, server)
 	local event = nio.control.event()
-	vim.schedule(function()
+	nio.run(function()
 		require('dap').run(dap_launcher_config, {
 			after = function(_)
 				shutdown_server(server)
@@ -163,10 +161,10 @@ local function run_test(dap_launcher_config, server)
 end
 
 ---@param test_file_uri string
----@return JunitLaunchRequestArguments
+---@return JunitLaunchRequestArguments|nil
 local function resolve_junit_launch_arguments(tree, test_file_uri)
 	local data = tree:data()
-	---@type JunitLaunchRequestArguments
+	---@type JunitLaunchRequestArguments|nil
 	local arguments
 	if data.type == 'test' then
 		arguments = handle_test(data, test_file_uri)
@@ -176,6 +174,9 @@ local function resolve_junit_launch_arguments(tree, test_file_uri)
 		arguments = handle_file(test_file_uri)
 	else
 		error('Unsupported type: ' .. data.type)
+	end
+	if not arguments then
+		return nil
 	end
 	return jdtls.get_junit_launch_arguments(arguments)
 end
@@ -188,10 +189,17 @@ function M.build_spec(args)
 	local data = tree:data()
 	local test_file_uri = vim.uri_from_fname(data.path)
 
-	log.debug('file_uri', test_file_uri)
-
 	local junit_launch_arguments =
 		resolve_junit_launch_arguments(tree, test_file_uri)
+	if not junit_launch_arguments then
+		return {
+			context = {
+				file = data.path,
+				pos_id = data.id,
+				type = data.type,
+			},
+		}
+	end
 
 	local executable = jdtls.resolve_java_executable(
 		junit_launch_arguments.mainClass,
@@ -217,7 +225,7 @@ function M.build_spec(args)
 		run_test(dap_launcher_config, server)
 	else
 		dap_launcher_config.after = function()
-			vim.schedule(function()
+			nio.run(function()
 				shutdown_server(server)
 			end)
 		end

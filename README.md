@@ -1,16 +1,11 @@
-# neotest-jdtls (Under Development)
+# neotest-jdtls
 * This plugin provides a jdtls adapter for the [Neotest](https://github.com/rcarriga/neotest) framework.
-    * Depends on the nvim-java-core and nvim-java-test projects.
 
 ### Installation
 
 ```
 {
   'atm1020/neotest-jdtls', 
-    dependencies = {
-     nvim-java/nvim-java-core,
-     nvim-java/nvim-java-test,
-  }
 }
 ```
 
@@ -23,7 +18,12 @@ require("neotest").setup {
    require('neotest-jdtls')
  },
 }
+
+
 ```
+### Logging
+- logs are written to `neotest-jdtls.log` within the `~/.local/share/nvim/` directory.
+- log level can be set with `vim.g.neotest_jdtls_log_level`.
 
 ### Acknowledgements
 - **[neotest-java](https://github.com/rcasia/neotest-java)**
