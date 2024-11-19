@@ -19,7 +19,19 @@ M.discover_positions = function(file_path)
 		    )
 		)
 		name: (identifier) @test.name
-	      ) @test.definition
+	      )
+	      @test.definition
+	      ;;  @ParameterizedTest(xx) functions
+	      (method_declaration
+		(modifiers
+		  (annotation
+		    name: (identifier) @annotation
+		      (#any-of? @annotation  "ParameterizedTest" )
+		    )
+		)
+		name: (identifier) @test.name
+	      )
+	      @test.definition
 
 	]]
 
