@@ -65,10 +65,31 @@ local function map_to_neotest_result_item(item)
 	end
 end
 
+local function get_test_key_from_junit_result(test_name)
+	--  test_name format: "function_name(package.name.ClassName)"
+	log.debug('get_test_key_from_junit_result input:', test_name)
+	local function_name = test_name:match('^(.+)%(') -- Extract "function_name"
+	local class_name = test_name:match('%.([%w$]+)%)$') -- Extract "ClassName"
+
+	assert(function_name, 'function name not found')
+	assert(class_name, 'class name not found')
+	local key = class_name .. '::' .. function_name
+	log.debug('get_test_key_from_junit_result output:', key)
+	return key
+end
+
+local function get_test_key_from_neotest_id(test_id)
+	-- test_id format: "/path/to/file::class_name::function_name"
+	log.debug('get_test_key_from_neotest_id input:', test_id)
+	local key = test_id:match('::(.+)$')
+	log.debug('get_test_key_from_neotest_id output:', key)
+	return key
+end
+
 local function group_and_map_test_results(test_result_lookup, suite)
 	for _, ch in ipairs(suite.children) do
-		local key = vim.split(ch.test_name, '%(')[1]
 		if not ch.is_suite then
+			local key = get_test_key_from_junit_result(ch.test_name)
 			if test_result_lookup[key] == nil then
 				test_result_lookup[key] = {}
 			end
@@ -80,7 +101,9 @@ local function group_and_map_test_results(test_result_lookup, suite)
 end
 
 local function merge_neotest_results(test_result_lookup, node_data)
-	if test_result_lookup[node_data.name] == nil then
+	log.debug('Before|Merging test results', vim.inspect(node_data))
+	local key = get_test_key_from_neotest_id(node_data.id)
+	if test_result_lookup[key] == nil then
 		local root = jdtls.root_dir()
 		nio.scheduler()
 		local current = project.get_current_project()
@@ -95,14 +118,14 @@ local function merge_neotest_results(test_result_lookup, node_data)
 		return nil
 	end
 
-	if #test_result_lookup[node_data.name] == 1 then
-		return test_result_lookup[node_data.name][1]
+	if #test_result_lookup[key] == 1 then
+		return test_result_lookup[key][1]
 	end
 
 	local dynamic_test_result = {
 		status = TestStatus.Passed,
 	}
-	for _, result in ipairs(test_result_lookup[node_data.name]) do
+	for _, result in ipairs(test_result_lookup[key]) do
 		-- TODO merge stack traces
 		if result.status == TestStatus.Failed then
 			dynamic_test_result.status = TestStatus.Failed
