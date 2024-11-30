@@ -5,6 +5,11 @@ local project = require('neotest-jdtls.utils.project')
 local jdtls = require('neotest-jdtls.utils.jdtls')
 local nio = require('nio')
 
+local default_passed_test_output =
+	'The console output is available in the DAP console.'
+---@type string|nil
+local default_passed_test_output_path = nil
+
 local M = {}
 
 --- @enum TestStatus
@@ -13,6 +18,14 @@ local TestStatus = {
 	Skipped = 'skipped',
 	Passed = 'passed',
 }
+
+local function get_default_passed_test_output_path()
+	if not default_passed_test_output_path then
+		default_passed_test_output_path = async.fn.tempname()
+		lib.files.write(default_passed_test_output_path, default_passed_test_output)
+	end
+	return default_passed_test_output_path
+end
 
 local function get_short_error_message(result)
 	if result.actual and result.expected then
@@ -50,12 +63,14 @@ local function map_to_neotest_result_item(item)
 			status = TestStatus.Skipped,
 		}
 	else
-		local results_path = async.fn.tempname()
+		local results_path
 		local log_data
 		if item.result.trace then
 			log_data = table.concat(item.result.trace, '\n')
+			results_path = async.fn.tempname()
 		else
-			log_data = 'Test passed (There is no output available)'
+			log_data = default_passed_test_output
+			results_path = get_default_passed_test_output_path()
 		end
 		lib.files.write(results_path, log_data)
 		return {
@@ -124,6 +139,7 @@ local function merge_neotest_results(test_result_lookup, node_data)
 
 	local dynamic_test_result = {
 		status = TestStatus.Passed,
+		output = get_default_passed_test_output_path(),
 	}
 	for _, result in ipairs(test_result_lookup[key]) do
 		-- TODO merge stack traces
@@ -142,6 +158,7 @@ end
 ---@param tree neotest.Tree
 function M.results(spec, _, tree)
 	log.debug('Parsing test results', vim.inspect(spec.context.report))
+	default_passed_test_output_path = nil
 	--- Set the results to skipped if the report is not available
 	if not spec.context.report then
 		local results = {}
