@@ -1,6 +1,6 @@
 # neotest-jdtls
 * This plugin provides a jdtls adapter for the [Neotest](https://github.com/rcarriga/neotest) framework.
-* Only supports Junit5 tests.
+* Supports Junit5, Junit4 tests.
 
 ### Installation
 

@@ -176,6 +176,10 @@ function M.results(spec, _, tree)
 	for _, item in ipairs(report) do
 		if item.children then
 			group_and_map_test_results(test_result_lookup, item)
+		elseif item.is_suite ~= nil and not item.is_suite then
+			-- The junit 4 test dosen't have children parameter
+			local key = get_test_key_from_junit_result(item.test_name)
+			test_result_lookup[key] = { map_to_neotest_result_item(item) }
 		end
 	end
 
