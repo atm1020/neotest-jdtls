@@ -108,10 +108,12 @@ end
 
 --- @param arguments JunitLaunchRequestArguments
 function JDTLS.get_junit_launch_arguments(arguments)
-	return execute_command({
+    local res =
+	 execute_command({
 		command = 'vscode.java.test.junit.argument',
 		arguments = vim.fn.json_encode(arguments),
-	}).result.body
+	})
+    return res.result.body
 end
 
 --- @param main_class string
@@ -124,6 +126,14 @@ function JDTLS.resolve_java_executable(main_class, project_name)
 			project_name,
 		},
 	}).result
+	return response
+end
+function JDTLS.get_class_paths(args)
+    local cmd = {
+        command = 'java.project.getClasspaths';
+        arguments = args;
+    }
+	local response = execute_command(cmd).result
 	return response
 end
 
