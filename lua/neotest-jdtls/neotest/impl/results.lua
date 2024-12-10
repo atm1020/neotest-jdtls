@@ -171,8 +171,18 @@ function M.results(spec, _, tree)
 		return results
 	end
 
+    local report = spec.context.report:get_results()
+    for _, node in tree:iter_nodes() do
+        local node_data = node:data()
+        log.debug(node_data)
+    end
+    log.debug(report)
+    if report.testType == 2 then -- TestNG
+        log.debug("Returning TestNG result", report.results)
+        return report.results
+    end
+
 	local test_result_lookup = {}
-	local report = spec.context.report:get_results()
 	for _, item in ipairs(report) do
 		if item.children then
 			group_and_map_test_results(test_result_lookup, item)
