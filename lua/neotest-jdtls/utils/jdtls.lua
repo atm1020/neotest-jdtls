@@ -3,24 +3,6 @@ local nio = require('nio')
 
 local JDTLS = {}
 
----@enum TestKind
-JDTLS.TestKind = {
-	JUnit5 = 0,
-	JUnit = 1,
-	TestNG = 2,
-	None = 100,
-}
-
----@enum TestLevel
-JDTLS.TestLevel = {
-	Workspace = 1,
-	WorkspaceFolder = 2,
-	Project = 3,
-	Package = 4,
-	Class = 5,
-	Method = 6,
-}
-
 function JDTLS.get_client()
 	local clients = nio.lsp.get_clients({ name = 'jdtls' })
 
@@ -128,26 +110,3 @@ function JDTLS.resolve_java_executable(main_class, project_name)
 end
 
 return JDTLS
-
----@class JavaTestItem
----@field children JavaTestItem[]
----@field uri string
----@field range Range
----@field jdtHandler string
----@field fullName string
----@field label string
----@field id string
----@field projectName string
----@field testKind TestKind
----@field testLevel TestLevel
----@field sortText string
----@field uniqueId string
----@field natureIds string[]
----
----@class Range
----@field start Position
----@field end Position
-
----@class Position
----@field line number
----@field character number

@@ -1,6 +1,6 @@
 local log = require('neotest-jdtls.utils.log')
 local jdtls = require('neotest-jdtls.utils.jdtls')
-local TestLevel = require('neotest-jdtls.utils.jdtls').TestLevel
+local TestLevel = require('neotest-jdtls.types.enums').TestLevel
 local class = require('neotest-jdtls.utils.class')
 
 local M = {
@@ -11,9 +11,18 @@ local M = {
 --- @field test_folders table<string, boolean> -- <uri, boolean>
 --- @field methods table<string, boolean> -- <uri, boolean>
 --- @field root_dir string
+--- @field test_kind TestKind
+--- @field project_name string
+--- @field uri string
 local ProjectCache = class()
 
-function ProjectCache:_init()
+function ProjectCache:_init(project_name, test_kind, uri)
+	assert(project_name)
+	assert(test_kind)
+	assert(uri)
+	self.project_name = project_name
+	self.test_kind = test_kind
+	self.uri = uri
 	self.methods = {}
 	self.test_folders = {}
 end
@@ -52,11 +61,12 @@ end
 
 local function load_current_project()
 	log.debug('Project cache loading')
-	local cache = ProjectCache()
 	local root = jdtls.root_dir()
 	local project = jdtls.find_java_projects(root)
-	assert(#project == 1)
+	assert(#project == 1, 'Multimodule projects currently not supported')
 	local jdtHandler = project[1].jdtHandler
+	local cache =
+		ProjectCache(project[1].projectName, project[1].testKind, project[1].uri)
 
 	local data = jdtls.find_test_packages_and_types(jdtHandler)
 	for _, package in ipairs(data) do
