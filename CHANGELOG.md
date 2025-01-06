@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.1.0](https://github.com/atm1020/neotest-jdtls/compare/v1.0.0...v1.1.0) (2025-01-06)
+
+
+### Features
+
+* add detailed log for parametrized tests ([e76b922](https://github.com/atm1020/neotest-jdtls/commit/e76b92269f8f9c328b6fcfb895449b76a7bdbe1f))
+* struct refactor ([e76b922](https://github.com/atm1020/neotest-jdtls/commit/e76b92269f8f9c328b6fcfb895449b76a7bdbe1f))
+
+
+### Bug Fixes
+
+* nested class tests ([e76b922](https://github.com/atm1020/neotest-jdtls/commit/e76b92269f8f9c328b6fcfb895449b76a7bdbe1f))
+
 ## 1.0.0 (2024-12-05)
 
 
