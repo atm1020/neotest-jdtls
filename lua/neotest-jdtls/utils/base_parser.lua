@@ -9,15 +9,27 @@ local BaseParser = class()
 ---@return fun(err: string, buffer: string) # callback function
 function BaseParser:get_stream_reader(conn)
 	self.conn = conn
+	local chunk = nil
 	return vim.schedule_wrap(function(err, buffer)
 		if err then
 			self.conn:close()
+			log.debug('connection closed')
 			return
 		end
 
 		if buffer then
-			log.debug('buffer', buffer)
-			self:on_update(buffer)
+			if chunk then
+				buffer = chunk .. buffer
+			end
+
+			if string.sub(buffer, -1) == '\n' then
+				self:on_update(buffer)
+				if chunk then
+					chunk = nil
+				end
+			else
+				chunk = buffer
+			end
 		else
 			self.conn:close()
 			log.debug('connection closed')
