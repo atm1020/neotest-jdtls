@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.1](https://github.com/atm1020/neotest-jdtls/compare/v1.1.0...v1.1.1) (2025-01-11)
+
+
+### Bug Fixes
+
+* **stream_reader:** merge incomplete data chunks ([083ac80](https://github.com/atm1020/neotest-jdtls/commit/083ac80dfa4bcd0a30b5e2f38656e7b3fc630dbf))
+
 ## [1.1.0](https://github.com/atm1020/neotest-jdtls/compare/v1.0.0...v1.1.0) (2025-01-06)
 
 
