@@ -11,7 +11,7 @@ lint:
 	luacheck ${SRC_DIR}  ${TESTS_DIR} --config .luacheckrc
 
 format:
-	~/.cargo/bin/stylua ${SRC_DIR}  ${TESTS_DIR} --config-path=.stylua.toml
+	stylua ${SRC_DIR}  ${TESTS_DIR} --config-path=.stylua.toml
 
 test:
 	@nvim --headless --noplugin -u ${TEST_CONFIG} -c "PlenaryBustedDirectory ${TESTS_DIR} {minimal_init = '${TEST_CONFIG}'}"
