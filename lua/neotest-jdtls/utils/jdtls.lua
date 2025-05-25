@@ -6,7 +6,7 @@ local JDTLS = {}
 function JDTLS.get_client()
 	local clients = nio.lsp.get_clients({ name = 'jdtls' })
 
-	if #clients > 1 then
+	if #clients < 1 then
 		error('Could not find any running jdtls clients')
 	end
 
