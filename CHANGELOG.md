@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.2](https://github.com/atm1020/neotest-jdtls/compare/v1.1.1...v1.1.2) (2025-06-02)
+
+
+### Bug Fixes
+
+* comparison ([ee478d7](https://github.com/atm1020/neotest-jdtls/commit/ee478d7c18f5aba560e3af55c00d8c2e8e7f481b))
+
 ## [1.1.1](https://github.com/atm1020/neotest-jdtls/compare/v1.1.0...v1.1.1) (2025-01-11)
 
 
