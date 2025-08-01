@@ -1,4 +1,5 @@
 local JunitRunner = require('neotest-jdtls.junit.runner')
+local TestNGRunner = require('neotest-jdtls.testng.runner')
 local project = require('neotest-jdtls.utils.project')
 local TestKind = require('neotest-jdtls.types.enums').TestKind
 
@@ -12,7 +13,7 @@ function M.build_spec(args)
 	assert(current_project.test_kind ~= TestKind.None)
 	local runner
 	if current_project.test_kind == TestKind.TestNG then
-		error('TestNG is not supported yet')
+		runner = TestNGRunner()
 	else
 		runner = JunitRunner()
 	end

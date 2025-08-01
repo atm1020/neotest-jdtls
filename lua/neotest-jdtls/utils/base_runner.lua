@@ -267,6 +267,7 @@ function BaseRunner:resolve_junit_launch_arguments(tree, test_file_uri)
 	end
 	self.context.test_kind = arguments.testKind
 	self.context.project_name = arguments.projectName
+    self.context.test_names = arguments.testNames
 	return jdtls.get_junit_launch_arguments(arguments)
 end
 
