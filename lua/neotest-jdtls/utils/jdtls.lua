@@ -16,7 +16,7 @@ end
 function JDTLS.root_dir()
 	-- TODO check why the nio.ls.get_clients is dosent has config property
 	local client = vim.lsp.get_clients({ name = 'jdtls' })[1]
-	return client.config.root_dir
+	return client and client.config.root_dir
 end
 
 ---TODO use this function to execute commands
