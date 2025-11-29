@@ -1,7 +1,9 @@
 local log = require('neotest-jdtls.utils.log')
 local nio = require('nio')
 
-local JDTLS = {}
+local JDTLS = {
+	jdtls_attached = false,
+}
 
 function JDTLS.get_client()
 	local clients = nio.lsp.get_clients({ name = 'jdtls' })
@@ -23,7 +25,7 @@ end
 ---@param cmd_info {command: string, arguments: any }
 ---@return { err: { code: number, message: string }, result: any }
 local function execute_command(cmd_info)
-	log.trace(
+	log.debug(
 		'Executing command:',
 		'[' .. cmd_info.command .. ']',
 		'with args:',
