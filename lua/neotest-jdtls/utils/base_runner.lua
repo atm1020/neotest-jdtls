@@ -87,9 +87,9 @@ function BaseRunner.load_lookup(id, java_test_item)
 		return nil
 	end
 	for _, children in ipairs(java_test_item.children) do
-		local neotest_id = BaseRunner.test_item_to_neotest_id(children)
+		-- local neotest_id = BaseRunner.test_item_to_neotest_id(children)
 		-- log.error('neotest_id', neotest_id)
-		if id == neotest_id then
+		if id == children.id then
 			return children
 		end
 
@@ -132,6 +132,8 @@ function BaseRunner:handle_test(data, test_file_uri)
 	assert(#java_test_items ~= 0, 'No test items found')
 
 	local java_test_item = java_test_items[1]
+	log.error('java_test_item', vim.inspect(java_test_item))
+	log.error('java_test_item', vim.inspect(data.id))
 	local closest_item = self.load_lookup(data.id, java_test_item)
 
 	assert(closest_item, 'No test items found')
@@ -158,9 +160,9 @@ function BaseRunner:find_all_children(java_test_item)
 		return nil
 	end
 	for _, children in ipairs(java_test_item.children) do
-		local neotest_id = BaseRunner.test_item_to_neotest_id(children)
+		-- local neotest_id = BaseRunner.test_item_to_neotest_id(children)
 		-- log.error(neotest_id)
-		self.context:append_test_item(neotest_id, children)
+		self.context:append_test_item(children.id, children)
 		self:find_all_children(children)
 	end
 end
@@ -294,6 +296,7 @@ function BaseRunner:run(args)
 	local tree = args and args.tree
 	local data = tree:data()
 	local test_file_uri = vim.uri_from_fname(data.path)
+	log.info('Running tests for', test_file_uri, 'with strategy', strategy)
 
 	local launch_arguments =
 		self:resolve_junit_launch_arguments(tree, test_file_uri)
