@@ -2,9 +2,11 @@ local log = require('neotest-jdtls.utils.log')
 local jdtls = require('neotest-jdtls.utils.jdtls')
 local TestLevel = require('neotest-jdtls.types.enums').TestLevel
 local class = require('neotest-jdtls.utils.class')
+local echo_ok = require('neotest-jdtls.utils.notify').echo_ok
 
 local M = {
 	project_cache = nil,
+	project_loading_in_progress = true,
 }
 
 --- @class ProjectCache
@@ -61,12 +63,19 @@ end
 
 local function load_current_project()
 	log.debug('Project cache loading')
+	echo_ok('Loading project...')
 	local root = jdtls.root_dir()
 	local project = jdtls.find_java_projects(root)
+	if #project ~= 1 then
+		M.project_loading_in_progress = false
+	end
 	assert(#project == 1, 'Multimodule projects currently not supported')
 	local jdtHandler = project[1].jdtHandler
 	local cache =
 		ProjectCache(project[1].projectName, project[1].testKind, project[1].uri)
+	echo_ok(
+		'  Loading test packages for "' .. project[1].projectName .. '"...'
+	)
 
 	local data = jdtls.find_test_packages_and_types(jdtHandler)
 	for _, package in ipairs(data) do
@@ -85,18 +94,21 @@ local function load_current_project()
 	end
 	M.project_cache = cache
 	log.debug('Project cache loaded')
+	echo_ok(' Project "' .. project[1].projectName .. '" loaded successfully')
 end
 
 --- @return ProjectCache
 function M.get_current_project()
 	if not M.project_cache then
+		M.project_loading_in_progress = true
 		load_current_project()
+		M.project_loading_in_progress = false
 	end
 	return M.project_cache
 end
 
 function M.clear_project_cache()
-	M.project_cache = nil
+	M.project_loading_in_progress = false
 	log.debug('Project cache cleared')
 end
 

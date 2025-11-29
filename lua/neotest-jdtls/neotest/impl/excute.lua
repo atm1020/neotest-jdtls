@@ -1,12 +1,19 @@
 local JunitRunner = require('neotest-jdtls.junit.runner')
 local project = require('neotest-jdtls.utils.project')
 local TestKind = require('neotest-jdtls.types.enums').TestKind
+local jdtls = require('neotest-jdtls.utils.jdtls')
+local echo_warn = require('neotest-jdtls.utils.notify').echo_warn
 
 local M = {}
 
 ---@param args neotest.RunArgs
 ---@return neotest.RunSpec
 function M.build_spec(args)
+	if not jdtls.jdtls_attached then
+		echo_warn('  JDTLS is not attached. Cannot run tests.')
+		return {}
+	end
+
 	-- local root = args.tree:root():data() TODO multimodule
 	local current_project = project.get_current_project()
 	assert(current_project.test_kind ~= TestKind.None)

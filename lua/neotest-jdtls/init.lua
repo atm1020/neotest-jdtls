@@ -1,5 +1,8 @@
+local log = require('neotest-jdtls.utils.log')
 local adapter = require('neotest-jdtls.neotest.adapter')
 local project = require('neotest-jdtls.utils.project')
+local jdtls = require('neotest-jdtls.utils.jdtls')
+local echo_warn = require('neotest-jdtls.utils.notify').echo_warn
 
 local group = vim.api.nvim_create_augroup('neotest-jdtls', { clear = true })
 
@@ -16,5 +19,35 @@ vim.api.nvim_create_user_command(
 	project.clear_project_cache,
 	{}
 )
+
+vim.api.nvim_create_autocmd('LspAttach', {
+	callback = function(args)
+		local client = vim.lsp.get_client_by_id(args.data.client_id)
+		if not client then
+			return
+		end
+		if client.name == 'jdtls' then
+			log.debug('JDTLS client attached')
+			jdtls.jdtls_attached = true
+			-- TODO neotest callback to refresh adapter
+		end
+	end,
+})
+
+vim.api.nvim_create_autocmd('LspDetach', {
+	callback = function(args)
+		local client = vim.lsp.get_client_by_id(args.data.client_id)
+		if not client then
+			return
+		end
+		if client.name == 'jdtls' then
+			log.debug('JDTLS client detached')
+			jdtls.jdtls_attached = false
+			echo_warn(
+				'JDTLS client detached. Neotest-jdtls is unavailable until it reattaches.'
+			)
+		end
+	end,
+})
 
 return adapter

@@ -1,7 +1,9 @@
 local log = require('neotest-jdtls.utils.log')
 local nio = require('nio')
 
-local JDTLS = {}
+local JDTLS = {
+	jdtls_attached = false,
+}
 
 function JDTLS.get_client()
 	local clients = nio.lsp.get_clients({ name = 'jdtls' })
