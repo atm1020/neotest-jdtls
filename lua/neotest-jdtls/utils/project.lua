@@ -15,6 +15,7 @@ local M = {
 --- @field test_kind TestKind
 --- @field project_name string
 --- @field uri string
+--- @field raw_test_file_lookup table<string, any>
 local ProjectCache = class()
 
 function ProjectCache:_init(project_name, test_kind, uri)
@@ -26,6 +27,7 @@ function ProjectCache:_init(project_name, test_kind, uri)
 	self.uri = uri
 	self.methods = {}
 	self.test_folders = {}
+	self.raw_test_file_lookup = {}
 end
 
 --[[ Example:
@@ -85,6 +87,7 @@ local function load_current_project()
 				split_and_fill(root, package.uri, cache.test_folders)
 				if child.testLevel == TestLevel.Class then
 					cache.methods[child.uri] = true
+					cache.raw_test_file_lookup[child.uri] = child
 				end
 			end
 		end
