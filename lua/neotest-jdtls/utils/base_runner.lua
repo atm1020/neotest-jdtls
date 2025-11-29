@@ -87,9 +87,7 @@ function BaseRunner.load_lookup(id, java_test_item)
 		return nil
 	end
 	for _, children in ipairs(java_test_item.children) do
-		local neotest_id = BaseRunner.test_item_to_neotest_id(children)
-		-- log.error('neotest_id', neotest_id)
-		if id == neotest_id then
+		if id == children.id then
 			return children
 		end
 
@@ -158,9 +156,7 @@ function BaseRunner:find_all_children(java_test_item)
 		return nil
 	end
 	for _, children in ipairs(java_test_item.children) do
-		local neotest_id = BaseRunner.test_item_to_neotest_id(children)
-		-- log.error(neotest_id)
-		self.context:append_test_item(neotest_id, children)
+		self.context:append_test_item(children.id, children)
 		self:find_all_children(children)
 	end
 end
