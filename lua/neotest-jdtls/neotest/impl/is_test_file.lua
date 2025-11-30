@@ -3,6 +3,10 @@ local project = require('neotest-jdtls.utils.project')
 local M = {}
 
 function M.is_test_file(file_path)
+	if not vim.endswith(file_path, ".java") then
+		return false
+	end
+	
 	local current_project = project.get_current_project()
 	local path = vim.uri_from_fname(file_path)
 	local is_test_file = current_project.methods[path] or false

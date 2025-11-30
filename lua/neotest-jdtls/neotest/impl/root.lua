@@ -6,7 +6,7 @@ local M = {}
 function M.root(_)
 	local root_dir = jdtls.root_dir()
 	log.debug('root_dir', root_dir)
-	return root_dir
+	return root_dir or vim.fn.getcwd()
 end
 
 return M
