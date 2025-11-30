@@ -299,6 +299,7 @@ function JunitTestParser.get_test_id_for_junit5_method(projectName, message)
 	end
 	-- log.error('methodName', methodName)
 	if className ~= '' then
+    methodName = methodName:gsub('%s*,%s*', ', ')
 		return projectName .. '@' .. className .. methodName, invocationSuffix
 	else
 		return projectName .. '@' .. message, invocationSuffix
