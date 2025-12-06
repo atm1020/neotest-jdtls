@@ -19,9 +19,14 @@ require("neotest").setup {
    require('neotest-jdtls')
  },
 }
-
-
 ```
+
+### Check plugins is ready to use
+- `checkhealth neotest-jdtls`
+The plugins  needs to has jdtls server running in order to work properly.
+
+### Commands
+- `NeotestJdtlsClearProjectCache` : Clear jdtls project cache.
 
 ### Logging
 - logs are written to `neotest-jdtls.log` within the `~/.local/share/nvim/` directory.

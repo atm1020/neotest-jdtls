@@ -1,8 +1,13 @@
 local lib = require('neotest.lib')
+local jdtls = require('neotest-jdtls.utils.jdtls')
 
 local M = {}
 
 M.discover_positions = function(file_path)
+	if not jdtls.jdtls_attached then
+		return nil
+	end
+
 	-- https://github.com/rcasia/neotest-java/blob/main/lua/neotest-java/core/positions_discoverer.lua
 	local query = [[
 	      ;; Test class

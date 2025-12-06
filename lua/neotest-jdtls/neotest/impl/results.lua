@@ -1,11 +1,17 @@
 local log = require('neotest-jdtls.utils.log')
 local TestStatus = require('neotest-jdtls.types.enums').TestStatus
+local jdtls = require('neotest-jdtls.utils.jdtls')
+
 local M = {}
 
 ---@param spec neotest.RunSpec
 ---@param result neotest.StrategyResult
 ---@param tree neotest.Tree
 function M.results(spec, _, tree)
+	if not jdtls.jdtls_attached then
+		return {}
+	end
+
 	log.debug('Parsing test results', vim.inspect(spec.context.report))
 	-- default_passed_test_output_path = nil
 
