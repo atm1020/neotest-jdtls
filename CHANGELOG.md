@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.2.0](https://github.com/atm1020/neotest-jdtls/compare/v1.1.2...v1.2.0) (2025-12-14)
+
+
+### Features
+
+* discover test position with jdtls ([#18](https://github.com/atm1020/neotest-jdtls/issues/18)) ([d4a631a](https://github.com/atm1020/neotest-jdtls/commit/d4a631ad1b5a73d93d5eed4a2c63fdabb32e8493))
+* handle jdtls unavailable ([#22](https://github.com/atm1020/neotest-jdtls/issues/22)) ([f0c662b](https://github.com/atm1020/neotest-jdtls/commit/f0c662ba51d4090e1927857bb9f481a85c0ac26e))
+
 ## [1.1.2](https://github.com/atm1020/neotest-jdtls/compare/v1.1.1...v1.1.2) (2025-06-02)
 
 
