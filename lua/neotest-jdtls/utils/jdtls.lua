@@ -34,7 +34,7 @@ local function execute_command(cmd_info)
 	local err, result = JDTLS.get_client().request
 		.workspace_executeCommand(cmd_info)
 	if err then
-		log.debug(
+		log.error(
 			'Command',
 			'[' .. cmd_info.command .. ']',
 			'failed with error:',
