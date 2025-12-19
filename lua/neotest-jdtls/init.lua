@@ -29,6 +29,9 @@ vim.api.nvim_create_autocmd('LspAttach', {
 		end
 		if client.name == 'jdtls' then
 			log.debug('jdtls client attached')
+			if jdtls.jdtls_attached then
+				return
+			end
 			jdtls.jdtls_attached = true
 			echo_ok('The jdtls client attached.')
 		end
