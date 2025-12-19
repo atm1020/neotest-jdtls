@@ -21,6 +21,22 @@ require("neotest").setup {
 }
 ```
 
+#### Lazy.nvim 
+```lua
+return {
+    {
+        "atm1020/neotest-jdtls",
+        dependencies = {
+            "nvim-neotest/neotest",
+        },
+    },
+    {
+        "nvim-neotest/neotest",
+        opts = { adapters = { "neotest-jdtls" } },
+    },
+}
+```
+
 ### Check `neotest-jdtls` is ready to use
 - `checkhealth neotest-jdtls`
 
