@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.2.1](https://github.com/atm1020/neotest-jdtls/compare/v1.2.0...v1.2.1) (2025-12-20)
+
+
+### Bug Fixes
+
+* add error logging when the jdtls query fails ([8f4bdbe](https://github.com/atm1020/neotest-jdtls/commit/8f4bdbe39acd095a7b97d02a142498710172d9d9))
+* duplicated jdtls attched msg ([5990367](https://github.com/atm1020/neotest-jdtls/commit/59903678f67363db3aee9fbbfad17dc73722f21b))
+* parsing parametrized tests ([#21](https://github.com/atm1020/neotest-jdtls/issues/21)) ([2b5acd8](https://github.com/atm1020/neotest-jdtls/commit/2b5acd856e7ac9d8b436a5682b0af8223e4395fd))
+
 ## [1.2.0](https://github.com/atm1020/neotest-jdtls/compare/v1.1.2...v1.2.0) (2025-12-14)
 
 
